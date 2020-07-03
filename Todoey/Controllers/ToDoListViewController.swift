@@ -32,5 +32,35 @@ class ToDoListViewController: UITableViewController {
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
+    
+    //MARK: - Add New Item action button pressed
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        //Add Alert pop up
+        let alert = UIAlertController(title: "Add new ToDoey Item", message: "", preferredStyle: .alert)
+        //Add a TextField to our alert
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Create new Item"
+        }
+        //Create Action which is a "button" or item that executes when clicked
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            //Get text fields array
+            if let textField = alert.textFields {
+                //Get text from first and only text field
+                if let safeText = textField[0].text {
+                    //Add text field to array and reload table view
+                    self.itemArray.append(safeText)
+                    DispatchQueue.main.async {
+                        self.tableView.reloadData()
+                    }
+                }
+            }
+        }
+        //Add the action to our alert
+        alert.addAction(action)
+        //Present our alert
+        present(alert, animated: true, completion: nil)
+    }
+    
 }
 
