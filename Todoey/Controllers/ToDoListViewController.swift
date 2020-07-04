@@ -3,13 +3,7 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
 
-    var toDoItems = [
-        ToDoList("Run vac", false),
-        ToDoList("Mop", false),
-        ToDoList("Clean Bathroom", false),
-        ToDoList("Do Laundry", false),
-        ToDoList("Mop", false)
-    ]
+    var toDoItems = [ToDoList]()
     
     //File patch for local storage on device
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
@@ -85,9 +79,10 @@ class ToDoListViewController: UITableViewController {
         let decoder = PropertyListDecoder()
         do {
             //Get contents of locally stored file as Data type
-            let data = try Data(contentsOf: dataFilePath!)
-            //Decode data using PropertyListDecoder into object
-            toDoItems = try decoder.decode([ToDoList].self, from: data)
+            if let data = try? Data(contentsOf: dataFilePath!) {
+                //Decode data using PropertyListDecoder into object\
+                toDoItems = try decoder.decode([ToDoList].self, from: data)
+            }
         } catch {
             print("Error encoding data \(error)")
         }
