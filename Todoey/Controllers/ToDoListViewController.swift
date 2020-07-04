@@ -11,13 +11,12 @@ class ToDoListViewController: UITableViewController {
         ToDoList("Mop", false)
     ]
     
-    let defaults = UserDefaults.standard
+    //File patch for local storage on device
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        if let items = defaults.array(forKey: "ToDoListArray") as? [ToDoList] {
-            toDoItems = items
-        }
+        loadData()
     }
     
     //MARK: - Table view delegate for number of rows in table view
@@ -38,10 +37,7 @@ class ToDoListViewController: UITableViewController {
     //MARK: - Table view delegate for when cell row is clicked
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         toDoItems[indexPath.row].Checked = !toDoItems[indexPath.row].Checked
-        
-        DispatchQueue.main.async {
-            self.tableView.reloadData()
-        }
+        saveData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -60,10 +56,7 @@ class ToDoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             if let safeString = textField.text {
                 self.toDoItems.append(ToDoList(safeString, false))
-                self.defaults.set(self.toDoItems, forKey: "ToDoListArrary")
-                DispatchQueue.main.async {
-                    self.tableView.reloadData()
-                }
+                self.saveData()
             }
         }
         //Add the action to our alert
@@ -71,6 +64,33 @@ class ToDoListViewController: UITableViewController {
         //Present our alert
         present(alert, animated: true, completion: nil)
     }
+    //Save to local storage
+    func saveData() {
+        let encoder = PropertyListEncoder()
+        do {
+            //Encode the to do items using PropertyListEncoder
+            let data = try encoder.encode(toDoItems)
+            //Wirite encoded data to file path
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding data \(error)")
+        }
+        
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
+    }
     
+    func loadData() {
+        let decoder = PropertyListDecoder()
+        do {
+            //Get contents of locally stored file as Data type
+            let data = try Data(contentsOf: dataFilePath!)
+            //Decode data using PropertyListDecoder into object
+            toDoItems = try decoder.decode([ToDoList].self, from: data)
+        } catch {
+            print("Error encoding data \(error)")
+        }
+    }
 }
 

@@ -8,9 +8,9 @@
 
 import Foundation
 
-class ToDoList {
+class ToDoList: Codable {
     var ToDoListItemName: String
-    var Checked: Bool
+    var Checked: Bool = false
     
     init(_ ToDoListItem: String, _ Checked: Bool) {
         self.ToDoListItemName = ToDoListItem
