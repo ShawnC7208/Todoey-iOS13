@@ -7,12 +7,12 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
-
-    var categories = [ToDoCategory]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    let realm = try! Realm()
+    var categories: Results<ToDoCategory>?
     
     //File patch for local storage on device
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
@@ -26,12 +26,12 @@ class CategoryViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return categories.count
+        return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        cell.textLabel?.text = categories[indexPath.row].name
+        cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories added yet"
         return cell
     }
     
@@ -43,7 +43,7 @@ class CategoryViewController: UITableViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         let destinationVC = segue.destination as! ToDoListViewController
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categories[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
 
@@ -60,10 +60,9 @@ class CategoryViewController: UITableViewController {
         //Create Action which is a "button" or item that executes when clicked
         let action = UIAlertAction(title: "Add Category", style: .default) { (action) in
             if let safeString = textField.text {
-                let newItem = ToDoCategory(context: self.context)
+                let newItem = ToDoCategory()
                 newItem.name = safeString
-                self.categories.append(newItem)
-                self.saveData()
+                self.save(category: newItem)
             }
         }
         //Add the action to our alert
@@ -73,11 +72,13 @@ class CategoryViewController: UITableViewController {
     }
     
     //Save to local storage
-    func saveData() {
+    func save(category: ToDoCategory) {
         do {
-            try self.context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
-            print("error saving context: \(error)")
+            print("error saving category: \(error)")
         }
         
         DispatchQueue.main.async {
@@ -85,13 +86,8 @@ class CategoryViewController: UITableViewController {
         }
     }
     
-    func loadData(with request: NSFetchRequest<ToDoCategory> = ToDoCategory.fetchRequest()) {
-        do {
-            categories = try context.fetch(request)
-        }
-        catch {
-            print("error fetching context: \(error)")
-        }
+    func loadData() {
+        categories = realm.objects(ToDoCategory.self)
         DispatchQueue.main.async {
             self.tableView.reloadData()
         }
