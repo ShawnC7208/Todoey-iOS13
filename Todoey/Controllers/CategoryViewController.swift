@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     var categories: Results<ToDoCategory>?
@@ -20,20 +21,30 @@ class CategoryViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         loadData()
+        tableView.rowHeight = 80.0
+        tableView.separatorStyle = .none
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        navigationController?.navigationBar.backgroundColor = UIColor(hexString: "1D9bF6")
     }
 
     // MARK: - Table view data source
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
         return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories added yet"
+        let hexColor = UIColor(hexString: categories?[indexPath.row].cellColor ?? UIColor.randomFlat().hexValue())
+        guard let categoryColor = hexColor else {fatalError()}
+        cell.backgroundColor = categoryColor
+        cell.textLabel?.textColor = ContrastColorOf(categoryColor, returnFlat: true)
         return cell
     }
+    
     
     //MARK: - Table View Delegates
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -62,6 +73,7 @@ class CategoryViewController: UITableViewController {
             if let safeString = textField.text {
                 let newItem = ToDoCategory()
                 newItem.name = safeString
+                newItem.cellColor = UIColor.randomFlat().hexValue()
                 self.save(category: newItem)
             }
         }
@@ -88,6 +100,20 @@ class CategoryViewController: UITableViewController {
     
     func loadData() {
         categories = realm.objects(ToDoCategory.self)
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
+    }
+    
+    override func updateModel(at indexPath: IndexPath) {
+        do {
+            try self.realm.write {
+                self.realm.delete((self.categories?[indexPath.row])!)
+            }
+        }
+        catch {
+            print("Error deleting cell \(error)")
+        }
         DispatchQueue.main.async {
             self.tableView.reloadData()
         }
